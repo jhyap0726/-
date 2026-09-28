@@ -1,0 +1,2437 @@
+```html
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>乡村生活 3D</title>
+
+<style>
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+}
+
+html,body{
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    font-family:
+        Arial,
+        "Microsoft YaHei",
+        sans-serif;
+    background:#87ceeb;
+}
+
+#game{
+    position:fixed;
+    inset:0;
+    width:100%;
+    height:100%;
+}
+
+#ui{
+    position:fixed;
+    top:12px;
+    left:12px;
+    z-index:20;
+
+    width:270px;
+    padding:14px;
+
+    color:white;
+    background:rgba(0,0,0,.65);
+
+    border-radius:16px;
+
+    backdrop-filter:blur(8px);
+
+    box-shadow:
+        0 8px 30px rgba(0,0,0,.25);
+}
+
+#ui h1{
+    font-size:20px;
+    margin-bottom:8px;
+}
+
+.stat{
+    margin:5px 0;
+    font-size:14px;
+}
+
+.bar{
+    width:100%;
+    height:8px;
+    margin-top:3px;
+
+    background:rgba(255,255,255,.25);
+
+    border-radius:10px;
+    overflow:hidden;
+}
+
+.barFill{
+    height:100%;
+    width:100%;
+    transition:.2s;
+}
+
+#staminaFill{
+    background:#ffd54f;
+}
+
+#time{
+    margin-top:8px;
+    font-size:13px;
+}
+
+#saveText{
+    margin-top:8px;
+    color:#9cff9c;
+    font-size:12px;
+}
+
+button{
+    border:0;
+    cursor:pointer;
+}
+
+#actions{
+    position:fixed;
+    right:15px;
+    top:15px;
+
+    z-index:30;
+
+    display:flex;
+    flex-direction:column;
+    gap:7px;
+}
+
+.actionBtn{
+    padding:10px 14px;
+
+    border-radius:10px;
+
+    background:rgba(0,0,0,.65);
+    color:white;
+
+    font-weight:bold;
+}
+
+.actionBtn:hover{
+    background:rgba(255,255,255,.25);
+}
+
+#message{
+    position:fixed;
+    left:50%;
+    top:80%;
+
+    transform:translate(-50%,-50%);
+
+    z-index:40;
+
+    padding:12px 20px;
+
+    color:white;
+
+    background:rgba(0,0,0,.75);
+
+    border-radius:12px;
+
+    opacity:0;
+    pointer-events:none;
+
+    transition:.25s;
+}
+
+#message.show{
+    opacity:1;
+}
+
+#help{
+    position:fixed;
+    bottom:12px;
+    left:50%;
+
+    transform:translateX(-50%);
+
+    z-index:20;
+
+    padding:9px 15px;
+
+    color:white;
+
+    background:rgba(0,0,0,.55);
+
+    border-radius:10px;
+
+    font-size:13px;
+
+    white-space:nowrap;
+}
+
+/* 商店 */
+
+#shop{
+    position:fixed;
+    inset:0;
+
+    z-index:100;
+
+    display:none;
+    align-items:center;
+    justify-content:center;
+
+    background:rgba(0,0,0,.55);
+}
+
+#shopBox{
+    width:360px;
+    max-width:90%;
+
+    padding:20px;
+
+    background:white;
+
+    border-radius:18px;
+
+    box-shadow:
+        0 20px 50px rgba(0,0,0,.4);
+}
+
+#shopBox h2{
+    margin-bottom:15px;
+}
+
+.shopItem{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+
+    margin:8px 0;
+    padding:10px;
+
+    background:#f1f1f1;
+
+    border-radius:10px;
+}
+
+.buy{
+    padding:7px 12px;
+
+    background:#4caf50;
+    color:white;
+
+    border-radius:8px;
+}
+
+#closeShop{
+    width:100%;
+    margin-top:12px;
+    padding:10px;
+
+    background:#555;
+    color:white;
+
+    border-radius:8px;
+}
+
+/* 手机 */
+
+#mobile{
+    position:fixed;
+    right:20px;
+    bottom:45px;
+
+    z-index:50;
+
+    display:grid;
+
+    grid-template-columns:
+        60px 60px 60px;
+
+    grid-template-rows:
+        60px 60px;
+
+    gap:5px;
+}
+
+.mobileBtn{
+    width:60px;
+    height:60px;
+
+    border-radius:15px;
+
+    background:rgba(0,0,0,.5);
+    color:white;
+
+    font-size:24px;
+
+    touch-action:none;
+
+    user-select:none;
+}
+
+#up{
+    grid-column:2;
+}
+
+#left{
+    grid-column:1;
+    grid-row:2;
+}
+
+#down{
+    grid-column:2;
+    grid-row:2;
+}
+
+#right{
+    grid-column:3;
+    grid-row:2;
+}
+
+@media(max-width:600px){
+
+    #ui{
+        width:220px;
+        padding:10px;
+    }
+
+    #ui h1{
+        font-size:17px;
+    }
+
+    .stat{
+        font-size:12px;
+    }
+
+    #help{
+        display:none;
+    }
+
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="game"></canvas>
+
+<!-- ================= UI ================= -->
+
+<div id="ui">
+
+    <h1>🌾 乡村生活 3D</h1>
+
+    <div class="stat">
+        💰 金币：
+        <b id="gold">100</b>
+    </div>
+
+    <div class="stat">
+        ⚡ 体力：
+        <b id="stamina">100</b>
+    </div>
+
+    <div class="bar">
+        <div
+            id="staminaFill"
+            class="barFill">
+        </div>
+    </div>
+
+    <div class="stat">
+        🌾 小麦：
+        <b id="wheat">0</b>
+    </div>
+
+    <div class="stat">
+        🌽 玉米：
+        <b id="corn">0</b>
+    </div>
+
+    <div class="stat">
+        🪵 木材：
+        <b id="wood">0</b>
+    </div>
+
+    <div class="stat">
+        🥕 胡萝卜：
+        <b id="carrot">0</b>
+    </div>
+
+    <div id="time">
+        ☀️ 第1天 08:00
+    </div>
+
+    <div id="saveText">
+        💾 已保存
+    </div>
+
+</div>
+
+<!-- ================= 操作按钮 ================= -->
+
+<div id="actions">
+
+    <button
+        class="actionBtn"
+        id="plantBtn">
+        🌱 种植
+    </button>
+
+    <button
+        class="actionBtn"
+        id="harvestBtn">
+        🌾 收获
+    </button>
+
+    <button
+        class="actionBtn"
+        id="chopBtn">
+        🪓 砍树
+    </button>
+
+    <button
+        class="actionBtn"
+        id="fishBtn">
+        🎣 钓鱼
+    </button>
+
+    <button
+        class="actionBtn"
+        id="shopBtn">
+        🏪 商店
+    </button>
+
+</div>
+
+<!-- ================= 提示 ================= -->
+
+<div id="message"></div>
+
+<div id="help">
+    WASD 移动　|　靠近农田种植/收获　|　靠近树木砍树　|　靠近河边钓鱼
+</div>
+
+<!-- ================= 手机 ================= -->
+
+<div id="mobile">
+
+    <button
+        class="mobileBtn"
+        id="up">
+        ▲
+    </button>
+
+    <button
+        class="mobileBtn"
+        id="left">
+        ◀
+    </button>
+
+    <button
+        class="mobileBtn"
+        id="down">
+        ▼
+    </button>
+
+    <button
+        class="mobileBtn"
+        id="right">
+        ▶
+    </button>
+
+</div>
+
+<!-- ================= 商店 ================= -->
+
+<div id="shop">
+
+    <div id="shopBox">
+
+        <h2>🏪 乡村商店</h2>
+
+        <div class="shopItem">
+
+            <span>
+                🌾 小麦种子
+            </span>
+
+            <button
+                class="buy"
+                data-item="wheat"
+                data-price="5">
+                购买 $5
+            </button>
+
+        </div>
+
+        <div class="shopItem">
+
+            <span>
+                🌽 玉米种子
+            </span>
+
+            <button
+                class="buy"
+                data-item="corn"
+                data-price="8">
+                购买 $8
+            </button>
+
+        </div>
+
+        <div class="shopItem">
+
+            <span>
+                🥕 胡萝卜种子
+            </span>
+
+            <button
+                class="buy"
+                data-item="carrot"
+                data-price="6">
+                购买 $6
+            </button>
+
+        </div>
+
+        <div class="shopItem">
+
+            <span>
+                ⚡ 体力恢复
+            </span>
+
+            <button
+                class="buy"
+                data-item="stamina"
+                data-price="15">
+                $15
+            </button>
+
+        </div>
+
+        <button id="closeShop">
+            关闭商店
+        </button>
+
+    </div>
+
+</div>
+
+<script type="module">
+
+import * as THREE from
+"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+
+
+/* ======================================================
+   游戏数据
+====================================================== */
+
+const defaultData = {
+
+    gold:100,
+
+    stamina:100,
+
+    wheat:0,
+
+    corn:0,
+
+    wood:0,
+
+    carrot:0,
+
+    day:1,
+
+    hour:8,
+
+    minute:0,
+
+    crops:[]
+
+};
+
+
+let data =
+    JSON.parse(
+        localStorage.getItem(
+            "village3d_save"
+        )
+    ) || defaultData;
+
+
+/* ======================================================
+   UI
+====================================================== */
+
+const goldUI =
+    document.getElementById("gold");
+
+const staminaUI =
+    document.getElementById("stamina");
+
+const wheatUI =
+    document.getElementById("wheat");
+
+const cornUI =
+    document.getElementById("corn");
+
+const woodUI =
+    document.getElementById("wood");
+
+const carrotUI =
+    document.getElementById("carrot");
+
+const staminaFill =
+    document.getElementById(
+        "staminaFill"
+    );
+
+const timeUI =
+    document.getElementById("time");
+
+const saveText =
+    document.getElementById(
+        "saveText"
+    );
+
+const message =
+    document.getElementById(
+        "message"
+    );
+
+
+function updateUI(){
+
+    goldUI.textContent =
+        data.gold;
+
+    staminaUI.textContent =
+        data.stamina;
+
+    wheatUI.textContent =
+        data.wheat;
+
+    cornUI.textContent =
+        data.corn;
+
+    woodUI.textContent =
+        data.wood;
+
+    carrotUI.textContent =
+        data.carrot;
+
+    staminaFill.style.width =
+        Math.max(
+            0,
+            data.stamina
+        ) + "%";
+
+    const h =
+        String(data.hour)
+        .padStart(2,"0");
+
+    const m =
+        String(data.minute)
+        .padStart(2,"0");
+
+    timeUI.textContent =
+        `☀️ 第${data.day}天 ${h}:${m}`;
+
+}
+
+
+updateUI();
+
+
+/* ======================================================
+   保存
+====================================================== */
+
+function saveGame(){
+
+    localStorage.setItem(
+        "village3d_save",
+        JSON.stringify(data)
+    );
+
+    saveText.textContent =
+        "💾 已保存";
+
+}
+
+
+setInterval(
+    saveGame,
+    5000
+);
+
+
+/* ======================================================
+   提示
+====================================================== */
+
+let messageTimer;
+
+
+function showMessage(text){
+
+    message.textContent =
+        text;
+
+    message.classList.add(
+        "show"
+    );
+
+    clearTimeout(
+        messageTimer
+    );
+
+    messageTimer =
+        setTimeout(
+            () => {
+
+                message.classList.remove(
+                    "show"
+                );
+
+            },
+            1800
+        );
+
+}
+
+
+/* ======================================================
+   THREE.JS
+====================================================== */
+
+const canvas =
+    document.getElementById(
+        "game"
+    );
+
+const scene =
+    new THREE.Scene();
+
+
+scene.background =
+    new THREE.Color(
+        0x87ceeb
+    );
+
+
+const camera =
+    new THREE.PerspectiveCamera(
+
+        60,
+
+        innerWidth / innerHeight,
+
+        .1,
+
+        1000
+
+    );
+
+
+camera.position.set(
+    0,
+    10,
+    16
+);
+
+
+const renderer =
+    new THREE.WebGLRenderer({
+
+        canvas,
+
+        antialias:true
+
+    });
+
+
+renderer.setPixelRatio(
+    Math.min(
+        devicePixelRatio,
+        2
+    )
+);
+
+
+renderer.setSize(
+    innerWidth,
+    innerHeight
+);
+
+
+renderer.shadowMap.enabled =
+    true;
+
+
+/* ======================================================
+   灯光
+====================================================== */
+
+const ambient =
+    new THREE.HemisphereLight(
+
+        0xffffff,
+
+        0x557755,
+
+        1.5
+
+    );
+
+
+scene.add(ambient);
+
+
+const sun =
+    new THREE.DirectionalLight(
+
+        0xffffff,
+
+        2
+
+    );
+
+
+sun.position.set(
+    30,
+    50,
+    20
+);
+
+
+sun.castShadow =
+    true;
+
+
+scene.add(sun);
+
+
+/* ======================================================
+   地面
+====================================================== */
+
+const ground =
+    new THREE.Mesh(
+
+        new THREE.PlaneGeometry(
+            120,
+            120
+        ),
+
+        new THREE.MeshStandardMaterial({
+
+            color:0x4caf50
+
+        })
+
+    );
+
+
+ground.rotation.x =
+    -Math.PI / 2;
+
+
+ground.receiveShadow =
+    true;
+
+
+scene.add(ground);
+
+
+/* ======================================================
+   道路
+====================================================== */
+
+function createRoad(
+    x,
+    z,
+    w,
+    d
+){
+
+    const road =
+        new THREE.Mesh(
+
+            new THREE.BoxGeometry(
+                w,
+                .05,
+                d
+            ),
+
+            new THREE.MeshStandardMaterial({
+
+                color:0xc2a36b
+
+            })
+
+        );
+
+
+    road.position.set(
+        x,
+        .03,
+        z
+    );
+
+
+    scene.add(road);
+
+}
+
+
+createRoad(
+    0,
+    -2,
+    100,
+    4
+);
+
+createRoad(
+    0,
+    -30,
+    4,
+    60
+);
+
+
+/* ======================================================
+   河流
+====================================================== */
+
+const river =
+    new THREE.Mesh(
+
+        new THREE.PlaneGeometry(
+            120,
+            9
+        ),
+
+        new THREE.MeshStandardMaterial({
+
+            color:0x2196f3,
+
+            transparent:true,
+
+            opacity:.85
+
+        })
+
+    );
+
+
+river.rotation.x =
+    -Math.PI / 2;
+
+
+river.position.set(
+    0,
+    .04,
+    22
+);
+
+
+scene.add(river);
+
+
+/* ======================================================
+   房子
+====================================================== */
+
+function createHouse(
+    x,
+    z
+){
+
+    const group =
+        new THREE.Group();
+
+
+    const body =
+        new THREE.Mesh(
+
+            new THREE.BoxGeometry(
+                9,
+                5,
+                7
+            ),
+
+            new THREE.MeshStandardMaterial({
+
+                color:0xffdda5
+
+            })
+
+        );
+
+
+    body.position.y =
+        2.5;
+
+
+    body.castShadow =
+        true;
+
+
+    group.add(body);
+
+
+    const roof =
+        new THREE.Mesh(
+
+            new THREE.ConeGeometry(
+                6.5,
+                4,
+                4
+            ),
+
+            new THREE.MeshStandardMaterial({
+
+                color:0xb83b32
+
+            })
+
+        );
+
+
+    roof.position.y =
+        7;
+
+
+    roof.rotation.y =
+        Math.PI / 4;
+
+
+    roof.castShadow =
+        true;
+
+
+    group.add(roof);
+
+
+    const door =
+        new THREE.Mesh(
+
+            new THREE.BoxGeometry(
+                1.5,
+                2.6,
+                .2
+            ),
+
+            new THREE.MeshStandardMaterial({
+
+                color:0x5d4037
+
+            })
+
+        );
+
+
+    door.position.set(
+        0,
+        1.3,
+        3.55
+    );
+
+
+    group.add(door);
+
+
+    group.position.set(
+        x,
+        0,
+        z
+    );
+
+
+    scene.add(group);
+
+}
+
+
+createHouse(
+    0,
+    -10
+);
+
+
+/* ======================================================
+   农田
+====================================================== */
+
+const farmGroup =
+    new THREE.Group();
+
+
+farmGroup.position.set(
+    0,
+    0,
+    5
+);
+
+
+scene.add(farmGroup);
+
+
+const farmBase =
+    new THREE.Mesh(
+
+        new THREE.BoxGeometry(
+            20,
+            .25,
+            12
+        ),
+
+        new THREE.MeshStandardMaterial({
+
+            color:0x795548
+
+        })
+
+    );
+
+
+farmBase.position.y =
+    .12;
+
+
+farmGroup.add(
+    farmBase
+);
+
+
+/* 农田格子 */
+
+const cropPlots = [];
+
+
+for(
+    let x=-8;
+    x<=8;
+    x+=2
+){
+
+    for(
+        let z=-4;
+        z<=4;
+        z+=2
+    ){
+
+        const plot =
+            new THREE.Mesh(
+
+                new THREE.BoxGeometry(
+                    1.6,
+                    .18,
+                    1.6
+                ),
+
+                new THREE.MeshStandardMaterial({
+
+                    color:0x6d4c41
+
+                })
+
+            );
+
+
+        plot.position.set(
+            x,
+            .28,
+            z
+        );
+
+
+        farmGroup.add(
+            plot
+        );
+
+
+        cropPlots.push({
+            x,
+            z,
+            crop:null,
+            mesh:null
+        });
+
+    }
+
+}
+
+
+/* ======================================================
+   树
+====================================================== */
+
+const trees = [];
+
+
+function createTree(
+    x,
+    z
+){
+
+    const group =
+        new THREE.Group();
+
+
+    const trunk =
+        new THREE.Mesh(
+
+            new THREE.CylinderGeometry(
+                .4,
+                .6,
+                3,
+                8
+            ),
+
+            new THREE.MeshStandardMaterial({
+
+                color:0x6d4c41
+
+            })
+
+        );
+
+
+    trunk.position.y =
+        1.5;
+
+
+    trunk.castShadow =
+        true;
+
+
+    group.add(
+        trunk
+    );
+
+
+    const leaves =
+        new THREE.Mesh(
+
+            new THREE.SphereGeometry(
+                2.2,
+                10,
+                10
+            ),
+
+            new THREE.MeshStandardMaterial({
+
+                color:0x2e7d32
+
+            })
+
+        );
+
+
+    leaves.position.y =
+        4;
+
+
+    leaves.castShadow =
+        true;
+
+
+    group.add(
+        leaves
+    );
+
+
+    group.position.set(
+        x,
+        0,
+        z
+    );
+
+
+    scene.add(
+        group
+    );
+
+
+    trees.push({
+        group,
+        x,
+        z,
+        alive:true
+    });
+
+}
+
+
+[
+    [-20,-20],
+    [-28,-8],
+    [-22,10],
+    [-30,25],
+    [20,-20],
+    [28,-8],
+    [22,8],
+    [30,25],
+    [-35,0],
+    [35,5],
+    [-25,32],
+    [25,34]
+].forEach(
+    p =>
+        createTree(
+            p[0],
+            p[1]
+        )
+);
+
+
+/* ======================================================
+   NPC
+====================================================== */
+
+function createNPC(
+    x,
+    z,
+    color,
+    name
+){
+
+    const npc =
+        new THREE.Group();
+
+
+    const body =
+        new THREE.Mesh(
+
+            new THREE.BoxGeometry(
+                1.1,
+                1.7,
+                .8
+            ),
+
+            new THREE.MeshStandardMaterial({
+
+                color
+
+            })
+
+        );
+
+
+    body.position.y =
+        1.5;
+
+
+    npc.add(
+        body
+    );
+
+
+    const head =
+        new THREE.Mesh(
+
+            new THREE.SphereGeometry(
+                .6,
+                14,
+                14
+            ),
+
+            new THREE.MeshStandardMaterial({
+
+                color:0xffcc99
+
+            })
+
+        );
+
+
+    head.position.y =
+        2.8;
+
+
+    npc.add(
+        head
+    );
+
+
+    npc.position.set(
+        x,
+        0,
+        z
+    );
+
+
+    scene.add(
+        npc
+    );
+
+
+    return npc;
+
+}
+
+
+createNPC(
+    12,
+    -7,
+    0x9c27b0,
+    "村民"
+);
+
+createNPC(
+    -12,
+    -6,
+    0xff9800,
+    "商人"
+);
+
+
+/* ======================================================
+   玩家
+====================================================== */
+
+const player =
+    new THREE.Group();
+
+
+const playerBody =
+    new THREE.Mesh(
+
+        new THREE.BoxGeometry(
+            1.2,
+            1.8,
+            .8
+        ),
+
+        new THREE.MeshStandardMaterial({
+
+            color:0x1976d2
+
+        })
+
+    );
+
+
+playerBody.position.y =
+    1.5;
+
+
+playerBody.castShadow =
+    true;
+
+
+player.add(
+    playerBody
+);
+
+
+const playerHead =
+    new THREE.Mesh(
+
+        new THREE.SphereGeometry(
+            .65,
+            16,
+            16
+        ),
+
+        new THREE.MeshStandardMaterial({
+
+            color:0xffcc99
+
+        })
+
+    );
+
+
+playerHead.position.y =
+    2.8;
+
+
+playerHead.castShadow =
+    true;
+
+
+player.add(
+    playerHead
+);
+
+
+player.position.set(
+    0,
+    0,
+    10
+);
+
+
+scene.add(
+    player
+);
+
+
+/* ======================================================
+   移动
+====================================================== */
+
+const keys = {
+
+    w:false,
+    a:false,
+    s:false,
+    d:false
+
+};
+
+
+window.addEventListener(
+    "keydown",
+    e => {
+
+        const k =
+            e.key.toLowerCase();
+
+        if(k==="w")
+            keys.w=true;
+
+        if(k==="a")
+            keys.a=true;
+
+        if(k==="s")
+            keys.s=true;
+
+        if(k==="d")
+            keys.d=true;
+
+    }
+);
+
+
+window.addEventListener(
+    "keyup",
+    e => {
+
+        const k =
+            e.key.toLowerCase();
+
+        if(k==="w")
+            keys.w=false;
+
+        if(k==="a")
+            keys.a=false;
+
+        if(k==="s")
+            keys.s=false;
+
+        if(k==="d")
+            keys.d=false;
+
+    }
+);
+
+
+/* 手机 */
+
+function mobileControl(
+    id,
+    key
+){
+
+    const btn =
+        document.getElementById(
+            id
+        );
+
+
+    btn.addEventListener(
+        "pointerdown",
+        e => {
+
+            e.preventDefault();
+
+            keys[key]=true;
+
+        }
+    );
+
+
+    btn.addEventListener(
+        "pointerup",
+        e => {
+
+            e.preventDefault();
+
+            keys[key]=false;
+
+        }
+    );
+
+
+    btn.addEventListener(
+        "pointercancel",
+        () => {
+
+            keys[key]=false;
+
+        }
+    );
+
+}
+
+
+mobileControl(
+    "up",
+    "w"
+);
+
+mobileControl(
+    "down",
+    "s"
+);
+
+mobileControl(
+    "left",
+    "a"
+);
+
+mobileControl(
+    "right",
+    "d"
+);
+
+
+/* ======================================================
+   距离
+====================================================== */
+
+function distanceXZ(
+    a,
+    b
+){
+
+    const dx =
+        a.x-b.x;
+
+    const dz =
+        a.z-b.z;
+
+    return Math.sqrt(
+        dx*dx+dz*dz
+    );
+
+}
+
+
+/* ======================================================
+   种植
+====================================================== */
+
+document.getElementById(
+    "plantBtn"
+).onclick =
+function(){
+
+    if(
+        player.position.z < -2 ||
+        player.position.z > 12 ||
+        Math.abs(player.position.x)>11
+    ){
+
+        showMessage(
+            "🌱 请靠近农田"
+        );
+
+        return;
+
+    }
+
+
+    const empty =
+        cropPlots.find(
+            p => !p.crop
+        );
+
+
+    if(!empty){
+
+        showMessage(
+            "农田已经种满了"
+        );
+
+        return;
+
+    }
+
+
+    if(data.wheat<=0){
+
+        showMessage(
+            "没有小麦种子！去商店购买"
+        );
+
+        return;
+
+    }
+
+
+    if(data.stamina<5){
+
+        showMessage(
+            "体力不足"
+        );
+
+        return;
+
+    }
+
+
+    data.wheat--;
+
+    data.stamina-=5;
+
+
+    empty.crop = {
+
+        type:"wheat",
+
+        growth:0
+
+    };
+
+
+    createCropVisual(
+        empty
+    );
+
+
+    updateUI();
+
+    showMessage(
+        "🌱 种下了一株小麦"
+    );
+
+    saveGame();
+
+};
+
+
+/* ======================================================
+   作物模型
+====================================================== */
+
+function createCropVisual(
+    plot
+){
+
+    if(plot.mesh)
+        farmGroup.remove(
+            plot.mesh
+        );
+
+
+    let color =
+        0x76b947;
+
+
+    if(
+        plot.crop &&
+        plot.crop.type==="corn"
+    ){
+
+        color =
+            0xffc107;
+
+    }
+
+
+    const mesh =
+        new THREE.Mesh(
+
+            new THREE.CylinderGeometry(
+                .18,
+                .25,
+                1,
+                6
+            ),
+
+            new THREE.MeshStandardMaterial({
+
+                color
+
+            })
+
+        );
+
+
+    mesh.position.set(
+        plot.x,
+        .9,
+        plot.z
+    );
+
+
+    plot.mesh =
+        mesh;
+
+
+    farmGroup.add(
+        mesh
+    );
+
+}
+
+
+/* ======================================================
+   收获
+====================================================== */
+
+document.getElementById(
+    "harvestBtn"
+).onclick =
+function(){
+
+    if(
+        player.position.z < -2 ||
+        player.position.z > 12 ||
+        Math.abs(player.position.x)>11
+    ){
+
+        showMessage(
+            "🌾 请靠近农田"
+        );
+
+        return;
+
+    }
+
+
+    let harvested = 0;
+
+
+    cropPlots.forEach(
+        plot => {
+
+            if(
+                plot.crop &&
+                plot.crop.growth>=100
+            ){
+
+                if(
+                    plot.crop.type==="wheat"
+                ){
+
+                    data.wheat += 3;
+
+                }
+
+                if(
+                    plot.crop.type==="corn"
+                ){
+
+                    data.corn += 3;
+
+                }
+
+
+                if(
+                    plot.crop.type==="carrot"
+                ){
+
+                    data.carrot += 3;
+
+                }
+
+
+                plot.crop=null;
+
+
+                if(plot.mesh){
+
+                    farmGroup.remove(
+                        plot.mesh
+                    );
+
+                    plot.mesh=null;
+
+                }
+
+
+                harvested++;
+
+            }
+
+        }
+    );
+
+
+    if(harvested){
+
+        showMessage(
+            `🌾 收获了 ${harvested} 块作物`
+        );
+
+    }else{
+
+        showMessage(
+            "还没有成熟的作物"
+        );
+
+    }
+
+
+    updateUI();
+
+    saveGame();
+
+};
+
+
+/* ======================================================
+   作物成长
+====================================================== */
+
+setInterval(
+    () => {
+
+        cropPlots.forEach(
+            plot => {
+
+                if(plot.crop){
+
+                    plot.crop.growth += 10;
+
+                    if(
+                        plot.crop.growth>100
+                    )
+                        plot.crop.growth=100;
+
+
+                    if(plot.mesh){
+
+                        const scale =
+                            .5 +
+                            plot.crop.growth /
+                            100;
+
+                        plot.mesh.scale.set(
+                            scale,
+                            scale,
+                            scale
+                        );
+
+                    }
+
+                }
+
+            }
+        );
+
+    },
+    5000
+);
+
+
+/* ======================================================
+   砍树
+====================================================== */
+
+document.getElementById(
+    "chopBtn"
+).onclick =
+function(){
+
+    if(data.stamina<10){
+
+        showMessage(
+            "⚡ 体力不足"
+        );
+
+        return;
+
+    }
+
+
+    let nearest=null;
+
+    let nearestDistance=4;
+
+
+    trees.forEach(
+        tree => {
+
+            if(!tree.alive)
+                return;
+
+
+            const d =
+                distanceXZ(
+                    player.position,
+                    tree.group.position
+                );
+
+
+            if(d<nearestDistance){
+
+                nearestDistance=d;
+
+                nearest=tree;
+
+            }
+
+        }
+    );
+
+
+    if(!nearest){
+
+        showMessage(
+            "🪓 请靠近树木"
+        );
+
+        return;
+
+    }
+
+
+    nearest.alive=false;
+
+    nearest.group.visible=false;
+
+
+    data.wood += 2;
+
+    data.stamina -= 10;
+
+
+    updateUI();
+
+    saveGame();
+
+
+    showMessage(
+        "🪵 获得 2 个木材"
+    );
+
+
+    setTimeout(
+        () => {
+
+            nearest.alive=true;
+
+            nearest.group.visible=true;
+
+        },
+        30000
+    );
+
+};
+
+
+/* ======================================================
+   钓鱼
+====================================================== */
+
+document.getElementById(
+    "fishBtn"
+).onclick =
+function(){
+
+    if(
+        player.position.z<15
+    ){
+
+        showMessage(
+            "🎣 请靠近河边"
+        );
+
+        return;
+
+    }
+
+
+    if(data.stamina<8){
+
+        showMessage(
+            "⚡ 体力不足"
+        );
+
+        return;
+
+    }
+
+
+    data.stamina-=8;
+
+
+    const money =
+        Math.floor(
+            Math.random()*15
+        )+5;
+
+
+    data.gold += money;
+
+
+    updateUI();
+
+    saveGame();
+
+
+    showMessage(
+        `🐟 钓到鱼，卖出获得 ${money} 金币`
+    );
+
+};
+
+
+/* ======================================================
+   商店
+====================================================== */
+
+const shop =
+    document.getElementById(
+        "shop"
+    );
+
+
+document.getElementById(
+    "shopBtn"
+).onclick =
+function(){
+
+    shop.style.display =
+        "flex";
+
+};
+
+
+document.getElementById(
+    "closeShop"
+).onclick =
+function(){
+
+    shop.style.display =
+        "none";
+
+};
+
+
+document.querySelectorAll(
+    ".buy"
+).forEach(
+    button => {
+
+        button.onclick =
+        function(){
+
+            const item =
+                this.dataset.item;
+
+            const price =
+                Number(
+                    this.dataset.price
+                );
+
+
+            if(
+                item==="stamina"
+            ){
+
+                if(
+                    data.gold<price
+                ){
+
+                    showMessage(
+                        "金币不足"
+                    );
+
+                    return;
+
+                }
+
+
+                data.gold-=price;
+
+                data.stamina=100;
+
+
+                showMessage(
+                    "⚡ 体力恢复"
+                );
+
+            }else{
+
+                if(
+                    data.gold<price
+                ){
+
+                    showMessage(
+                        "💰 金币不足"
+                    );
+
+                    return;
+
+                }
+
+
+                data.gold-=price;
+
+                data[item]++;
+
+
+                showMessage(
+                    "购买成功！"
+                );
+
+            }
+
+
+            updateUI();
+
+            saveGame();
+
+        };
+
+    }
+);
+
+
+/* ======================================================
+   游戏时间
+====================================================== */
+
+setInterval(
+    () => {
+
+        data.minute += 10;
+
+
+        if(
+            data.minute>=60
+        ){
+
+            data.minute=0;
+
+            data.hour++;
+
+        }
+
+
+        if(
+            data.hour>=24
+        ){
+
+            data.hour=0;
+
+            data.day++;
+
+            data.stamina=100;
+
+        }
+
+
+        updateTimeLighting();
+
+        updateUI();
+
+    },
+    3000
+);
+
+
+/* ======================================================
+   昼夜
+====================================================== */
+
+function updateTimeLighting(){
+
+    const hour =
+        data.hour;
+
+
+    let intensity=2;
+
+
+    if(
+        hour>=19 ||
+        hour<6
+    ){
+
+        intensity=.35;
+
+        scene.background =
+            new THREE.Color(
+                0x10182f
+            );
+
+    }else if(
+        hour>=17
+    ){
+
+        intensity=.8;
+
+        scene.background =
+            new THREE.Color(
+                0xf3a35c
+            );
+
+    }else{
+
+        intensity=2;
+
+        scene.background =
+            new THREE.Color(
+                0x87ceeb
+            );
+
+    }
+
+
+    sun.intensity =
+        intensity;
+
+}
+
+
+/* ======================================================
+   相机 + 移动
+====================================================== */
+
+const clock =
+    new THREE.Clock();
+
+
+function animate(){
+
+    requestAnimationFrame(
+        animate
+    );
+
+
+    const delta =
+        Math.min(
+            clock.getDelta(),
+            .05
+        );
+
+
+    const speed =
+        8 * delta;
+
+
+    if(keys.w)
+        player.position.z -= speed;
+
+    if(keys.s)
+        player.position.z += speed;
+
+    if(keys.a)
+        player.position.x -= speed;
+
+    if(keys.d)
+        player.position.x += speed;
+
+
+    player.position.x =
+        THREE.MathUtils.clamp(
+            player.position.x,
+            -55,
+            55
+        );
+
+
+    player.position.z =
+        THREE.MathUtils.clamp(
+            player.position.z,
+            -55,
+            55
+        );
+
+
+    /* 相机跟随 */
+
+    const target =
+        new THREE.Vector3(
+            player.position.x,
+            0,
+            player.position.z
+        );
+
+
+    const desired =
+        new THREE.Vector3(
+            player.position.x,
+            10,
+            player.position.z+15
+        );
+
+
+    camera.position.lerp(
+        desired,
+        .08
+    );
+
+
+    camera.lookAt(
+        target
+    );
+
+
+    renderer.render(
+        scene,
+        camera
+    );
+
+}
+
+
+animate();
+
+
+/* ======================================================
+   Resize
+====================================================== */
+
+window.addEventListener(
+    "resize",
+    () => {
+
+        camera.aspect =
+            innerWidth/
+            innerHeight;
+
+        camera.updateProjectionMatrix();
+
+        renderer.setSize(
+            innerWidth,
+            innerHeight
+        );
+
+    }
+);
+
+
+/* ======================================================
+   开始
+====================================================== */
+
+updateTimeLighting();
+
+showMessage(
+    "🌾 欢迎来到乡村！"
+);
+
+</script>
+
+</body>
+</html>
+```
